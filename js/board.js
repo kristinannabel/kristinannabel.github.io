@@ -56,9 +56,11 @@ function generateBoard(seed, playerId) {
     numbers.push(i);
   }
 
-  // Shuffle and take first 16
+  // Shuffle and take first 16, then sort ascending
   seededShuffle(numbers, rng);
-  return numbers.slice(0, 16);
+  var board = numbers.slice(0, 16);
+  board.sort(function (a, b) { return a - b; });
+  return board;
 }
 
 window.generateBoard = generateBoard;
