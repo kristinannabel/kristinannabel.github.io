@@ -288,9 +288,10 @@
       var idx = parseInt(this.dataset.index, 10);
       var f = this.dataset.field;
       songs[idx][f] = this.value;
-      // Clear Spotify URI when title or artist changes so it gets re-searched
+      // Clear Spotify data when title or artist changes so it gets re-searched
       if (f === 'title' || f === 'artist') {
         songs[idx].spotifyUri = null;
+        songs[idx].previewUrl = null;
       }
     });
     return input;
@@ -322,7 +323,9 @@
           });
           var data = await resp.json();
           if (data.tracks && data.tracks.items && data.tracks.items.length > 0) {
-            songs[idx].spotifyUri = data.tracks.items[0].uri;
+            var track = data.tracks.items[0];
+            songs[idx].spotifyUri = track.uri;
+            songs[idx].previewUrl = track.preview_url || null;
           } else {
             notFound.push(song.title + ' - ' + song.artist);
           }

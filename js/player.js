@@ -77,6 +77,28 @@
     roundRequirement.textContent = reqTexts[round] || '';
   }
 
+  // ---- Audio preview player ----
+  var previewAudio = null;
+  var lastPlayedSongIndex = -1;
+
+  function playPreview(previewUrl) {
+    if (previewAudio) {
+      previewAudio.pause();
+      previewAudio = null;
+    }
+    if (!previewUrl) return;
+    previewAudio = new Audio(previewUrl);
+    previewAudio.volume = 0.8;
+    previewAudio.play().catch(function () {
+      // Autoplay blocked - show a tap-to-play prompt
+      showToast('Tap anywhere to enable audio', 'var(--accent-secondary)', 5000);
+      document.addEventListener('click', function playOnTap() {
+        if (previewAudio) previewAudio.play().catch(function () {});
+        document.removeEventListener('click', playOnTap);
+      }, { once: true });
+    });
+  }
+
   // ---- Build song map ----
   function buildSongMap() {
     songMap = {};
@@ -316,6 +338,26 @@
 
       meta = newMeta;
       updateRoundDisplay();
+
+      // Play song preview when DJ advances to a new song
+      var newSongIndex = newMeta.currentSongIndex;
+      if (newSongIndex !== undefined && newSongIndex !== null && newSongIndex !== -1 && newSongIndex !== lastPlayedSongIndex) {
+        lastPlayedSongIndex = newSongIndex;
+        // Look up the song via songOrder from Firebase
+        gameRef.child('songOrder').once('value', function (orderSnap) {
+          var order = orderSnap.val() || [];
+          var songNum = order[newSongIndex];
+          var song = songMap[songNum];
+          if (song && song.previewUrl) {
+            playPreview(song.previewUrl);
+          }
+        });
+      }
+
+      // Stop audio on game finish
+      if (newMeta.status === 'finished' || newMeta.status === 'ended' || !newMeta.status) {
+        if (previewAudio) { previewAudio.pause(); previewAudio = null; }
+      }
 
       // Detect status change to "finished"
       if (newMeta.status === 'finished' && oldStatus !== 'finished') {
