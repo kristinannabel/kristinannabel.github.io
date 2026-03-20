@@ -165,15 +165,20 @@
     listeners.push({ ref: playersRef, event: 'value' });
 
     // Player activity + bingo claim listener
+    var processedClaims = {}; // track which claims we've already handled
+
     playersRef.on('child_changed', function (snap) {
       var playerId = snap.key;
       var playerData = snap.val();
+      if (!playerData) return;
 
       // Track player clicks for cooldown timer
       onPlayerActivity();
 
-      // Check for bingo claims
-      if (playerData && playerData.claimedBingo === true && meta && meta.status === 'playing') {
+      // Check for bingo claims - only process fresh claims
+      var claimKey = playerId + '_' + (meta ? meta.currentRound : 0);
+      if (playerData.claimedBingo === true && meta && meta.status === 'playing' && !processedClaims[claimKey]) {
+        processedClaims[claimKey] = true;
         handleBingoClaim(playerId, playerData);
       }
     });
@@ -549,8 +554,8 @@
     playerHasClicked = false;
     lastPlayerClickTime = 0;
     nextSongBtn.disabled = true;
-    nextSongCountdown = 30;
-    nextSongBtn.textContent = '⏳ 30s';
+    nextSongCountdown = 20;
+    nextSongBtn.textContent = '⏳ 20s';
 
     if (nextSongTimer) clearInterval(nextSongTimer);
     nextSongTimer = setInterval(function () {
@@ -662,13 +667,19 @@
 
   // ===== BINGO Handler =====
   function handleBingoClaim(playerId, playerData) {
+    // Guard: ignore claims from players with invalid/missing data
+    var board = playerData.board || [];
+    var marks = playerData.marks || [];
+    if (!Array.isArray(board) || board.length !== 16 || !Array.isArray(marks) || marks.length < 16) {
+      window.db.ref('games/' + roomCode + '/players/' + playerId + '/claimedBingo').set(false);
+      return;
+    }
+
     // Fresh read of calledSongs to avoid race condition
     window.db.ref('games/' + roomCode + '/calledSongs').once('value', function (snap) {
       var freshCalled = snap.val();
       freshCalled = Array.isArray(freshCalled) ? freshCalled : [];
 
-      var board = playerData.board || [];
-      var marks = playerData.marks || [];
       var currentRound = meta.currentRound || 1;
 
       var isValid = window.checkBingo(board, marks, freshCalled, currentRound);
