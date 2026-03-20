@@ -56,11 +56,17 @@ function generateBoard(seed, playerId) {
     numbers.push(i);
   }
 
-  // Shuffle and take first 16, then sort ascending
+  // Shuffle and take first 16
   seededShuffle(numbers, rng);
-  var board = numbers.slice(0, 16);
-  board.sort(function (a, b) { return a - b; });
-  return board;
+  var picked = numbers.slice(0, 16);
+
+  // Split into 4 rows, shuffle row order, sort within each row
+  var rows = [picked.slice(0, 4), picked.slice(4, 8), picked.slice(8, 12), picked.slice(12, 16)];
+  for (var r = 0; r < 4; r++) {
+    rows[r].sort(function (a, b) { return a - b; });
+  }
+  seededShuffle(rows, rng);
+  return rows[0].concat(rows[1], rows[2], rows[3]);
 }
 
 window.generateBoard = generateBoard;
