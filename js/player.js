@@ -171,10 +171,6 @@
       for (var s = 0; s < catSongs.length; s++) {
         var song = catSongs[s];
         var li = document.createElement('li');
-        var isCalled = calledSongs.indexOf(song.number) !== -1;
-        if (isCalled) {
-          li.classList.add('called-song');
-        }
 
         var numSpan = document.createElement('span');
         numSpan.className = 'song-num';
@@ -182,11 +178,6 @@
 
         li.appendChild(numSpan);
         li.appendChild(document.createTextNode(' ' + song.title + ' - ' + song.artist));
-
-        if (isCalled) {
-          var check = document.createTextNode(' \u2713');
-          li.appendChild(check);
-        }
 
         ul.appendChild(li);
       }
@@ -311,7 +302,6 @@
       calledSongs = snap.val() || [];
       if (!Array.isArray(calledSongs)) calledSongs = [];
       renderBoard();
-      renderSongList();
     });
 
     // Listen for meta changes
