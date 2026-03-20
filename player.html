@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Bingo - Player</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="player-view">
+    <!-- Header -->
+    <div class="header">
+      <div class="nav-bar">
+        <div class="room-info">
+          <span class="room-code-small" id="room-code-display">BINGO-????</span>
+        </div>
+        <div>
+          <span class="player-name" id="player-name-display">Loading...</span>
+        </div>
+        <div>
+          <span class="round-indicator" id="round-info">Round 1</span>
+        </div>
+      </div>
+      <p class="round-info text-muted mt-1" id="round-requirement"></p>
+    </div>
+
+    <div class="container">
+      <!-- Now Playing -->
+      <div class="now-playing" id="now-playing">
+        <div class="now-playing-label">Now Playing</div>
+        <div class="now-playing-number" id="now-playing-number">-</div>
+        <div class="now-playing-song" id="now-playing-title">Waiting for DJ to start...</div>
+        <div class="now-playing-artist" id="now-playing-artist"></div>
+      </div>
+
+      <!-- Bingo Board -->
+      <div class="bingo-board" id="bingo-board"></div>
+
+      <!-- BINGO Button -->
+      <div class="text-center mt-2 mb-2">
+        <button class="btn btn-primary btn-lg btn-block" id="bingo-btn" style="font-size:1.5rem; padding:0.8em 2em; letter-spacing:0.1em;">
+          BINGO!
+        </button>
+      </div>
+
+      <!-- Toast area -->
+      <div id="toast-area" class="text-center mb-2" style="min-height:1.5em;">
+        <span id="toast-msg" class="hidden" style="padding:0.4em 1em; border-radius:999px; font-weight:600; font-size:0.95rem;"></span>
+      </div>
+
+      <!-- Song List -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Song List</h3>
+        </div>
+        <div class="song-list-grid" id="song-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Winner Celebration Overlay -->
+  <div class="modal-overlay" id="celebration-overlay">
+    <div class="modal">
+      <h2 id="celebration-title">BINGO!</h2>
+      <div class="winner-name" id="celebration-winner"></div>
+      <p class="text-muted" id="celebration-subtitle"></p>
+      <button class="btn btn-primary btn-lg" id="celebration-dismiss">Continue</button>
+    </div>
+  </div>
+
+  <!-- Confetti container -->
+  <div class="confetti-container" id="confetti-container"></div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- App scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/songs.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/bingo-check.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/player.js"></script>
+</body>
+</html>
