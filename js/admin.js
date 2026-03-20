@@ -63,10 +63,8 @@
   var newGameBtn = document.getElementById('new-game-btn');
   var newGameRounds = document.getElementById('new-game-rounds');
 
-  // Spotify controls
+  // Spotify
   var spotifyConnectBtn = document.getElementById('spotify-connect-btn');
-  var spotifyPlayPause = document.getElementById('spotify-play-pause');
-  var spotifyVolume = document.getElementById('spotify-volume');
 
   // ===== Init =====
   var params = new URLSearchParams(window.location.search);
@@ -301,10 +299,10 @@
   saveSongsBtn.addEventListener('click', async function () {
     var token = window.spotifyAPI ? window.spotifyAPI.getToken() : null;
 
-    // Find songs missing Spotify URIs
+    // Find songs missing Spotify data (URI or preview)
     var missing = [];
     for (var i = 0; i < songs.length; i++) {
-      if (!songs[i].spotifyUri) missing.push(i);
+      if (!songs[i].spotifyUri || !songs[i].previewUrl) missing.push(i);
     }
 
     if (missing.length > 0 && token) {
@@ -315,22 +313,41 @@
       for (var m = 0; m < missing.length; m++) {
         var idx = missing[m];
         var song = songs[idx];
-        saveSongsBtn.textContent = 'Searching Spotify... (' + (m + 1) + '/' + missing.length + ')';
+        saveSongsBtn.textContent = 'Linking Spotify... (' + (m + 1) + '/' + missing.length + ')';
         try {
-          var query = encodeURIComponent(song.title + ' ' + song.artist);
-          var resp = await fetch('https://api.spotify.com/v1/search?q=' + query + '&type=track&limit=1', {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          var data = await resp.json();
-          if (data.tracks && data.tracks.items && data.tracks.items.length > 0) {
-            var track = data.tracks.items[0];
+          var track = null;
+
+          // If we already have a URI, fetch that track directly for preview URL
+          if (song.spotifyUri && !song.previewUrl) {
+            var trackId = song.spotifyUri.replace('spotify:track:', '');
+            var tResp = await fetch('https://api.spotify.com/v1/tracks/' + trackId, {
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (tResp.ok) track = await tResp.json();
+          }
+
+          // Otherwise search by title + artist
+          if (!track) {
+            var query = encodeURIComponent(song.title + ' ' + song.artist);
+            var resp = await fetch('https://api.spotify.com/v1/search?q=' + query + '&type=track&limit=1', {
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+            var data = await resp.json();
+            if (data.tracks && data.tracks.items && data.tracks.items.length > 0) {
+              track = data.tracks.items[0];
+            }
+          }
+
+          if (track && track.preview_url) {
             songs[idx].spotifyUri = track.uri;
-            songs[idx].previewUrl = track.preview_url || null;
+            songs[idx].previewUrl = track.preview_url;
+          } else if (track) {
+            notFound.push(song.title + ' - ' + song.artist + ' (no preview clip available)');
           } else {
-            notFound.push(song.title + ' - ' + song.artist);
+            notFound.push(song.title + ' - ' + song.artist + ' (not found on Spotify)');
           }
         } catch (err) {
-          notFound.push(song.title + ' - ' + song.artist);
+          notFound.push(song.title + ' - ' + song.artist + ' (error)');
         }
       }
 
@@ -376,20 +393,19 @@
   startGameBtn.addEventListener('click', function () {
     var missing = [];
     for (var i = 0; i < songs.length; i++) {
-      if (!songs[i].spotifyUri) {
+      if (!songs[i].previewUrl) {
         missing.push('#' + songs[i].number + ' ' + songs[i].title + ' - ' + songs[i].artist);
       }
     }
     if (missing.length > 0) {
-      alert('Cannot start! These songs are missing Spotify links:\n\n' + missing.join('\n') + '\n\nConnect Spotify and click "Save Changes" to auto-link them.');
+      alert('Cannot start! These songs are missing Spotify preview clips:\n\n' + missing.join('\n') + '\n\nConnect Spotify and click "Save Changes" to link them.');
       return;
     }
     window.db.ref('games/' + roomCode + '/meta/status').set('playing');
   });
 
-  // ===== Spotify Controls =====
+  // ===== Spotify Connect =====
   var spotifyLobbyConnect = document.getElementById('spotify-lobby-connect-btn');
-  var spotifyLobbyStatus = document.getElementById('spotify-lobby-status');
 
   function connectSpotify() {
     if (window.spotifyAPI) window.spotifyAPI.connect();
@@ -397,28 +413,15 @@
   if (spotifyConnectBtn) spotifyConnectBtn.addEventListener('click', connectSpotify);
   if (spotifyLobbyConnect) spotifyLobbyConnect.addEventListener('click', connectSpotify);
 
-  // Sync lobby spotify status with main status
-  var spotifyStatusCheck = setInterval(function () {
-    if (!window.spotifyAPI) return;
-    var connected = window.spotifyAPI.isConnected();
-    if (spotifyLobbyStatus) {
-      spotifyLobbyStatus.textContent = connected ? '🟢 Connected' : '🔴 Not connected';
-      spotifyLobbyStatus.style.color = connected ? 'var(--success)' : 'var(--text-muted)';
-    }
-    if (connected) {
-      if (spotifyLobbyConnect) spotifyLobbyConnect.classList.add('hidden');
-      clearInterval(spotifyStatusCheck);
-    }
-  }, 1000);
-  if (spotifyPlayPause) {
-    spotifyPlayPause.addEventListener('click', function () {
-      if (window.spotifyAPI) window.spotifyAPI.togglePlay();
-    });
-  }
-  if (spotifyVolume) {
-    spotifyVolume.addEventListener('input', function () {
-      if (window.spotifyAPI) window.spotifyAPI.setVolume(parseInt(this.value, 10) / 100);
-    });
+  // ===== Admin preview audio (same as players) =====
+  var adminPreviewAudio = null;
+
+  function playAdminPreview(previewUrl) {
+    if (adminPreviewAudio) { adminPreviewAudio.pause(); adminPreviewAudio = null; }
+    if (!previewUrl) return;
+    adminPreviewAudio = new Audio(previewUrl);
+    adminPreviewAudio.volume = 0.8;
+    adminPreviewAudio.play().catch(function () {});
   }
 
   // ===== Player List Rendering =====
@@ -550,12 +553,10 @@
 
     window.db.ref('games/' + roomCode).update(updates);
 
-    // Auto-play via Spotify if connected
-    if (window.spotifyAPI && window.spotifyAPI.isConnected()) {
-      var song = findSongByNumber(songNum);
-      if (song && song.spotifyUri) {
-        window.spotifyAPI.play(song.spotifyUri);
-      }
+    // Play preview audio on admin too
+    var song = findSongByNumber(songNum);
+    if (song && song.previewUrl) {
+      playAdminPreview(song.previewUrl);
     }
   });
 

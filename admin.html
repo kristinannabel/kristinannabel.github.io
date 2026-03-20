@@ -137,20 +137,6 @@
           <p class="text-muted" id="round-requirement">Round 1: One line</p>
         </div>
 
-        <!-- Spotify Status -->
-        <div class="card text-center" id="spotify-card">
-          <span id="spotify-status" style="font-weight:600;">🔴 Spotify not connected</span>
-          <div class="mt-1">
-            <button class="btn btn-success btn-sm" id="spotify-connect-btn">🎵 Connect Spotify</button>
-          </div>
-          <div id="spotify-controls" class="hidden mt-1" style="display:flex; align-items:center; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
-            <button class="btn btn-secondary btn-sm" id="spotify-play-pause">⏸ Pause</button>
-            <label style="font-size:0.85rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.4rem;">
-              🔊 <input type="range" id="spotify-volume" min="0" max="100" value="80" style="width:80px;">
-            </label>
-          </div>
-        </div>
-
         <!-- Current Song -->
         <div class="now-playing" id="now-playing">
           <div class="now-playing-label">Now Playing</div>
@@ -259,9 +245,6 @@
       setTimeout(function () { container.innerHTML = ''; }, 5000);
     };
   </script>
-
-  <!-- Spotify Web Playback SDK -->
-  <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
   <!-- App scripts -->
   <script src="js/firebase-config.js"></script>
