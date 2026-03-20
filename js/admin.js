@@ -59,6 +59,8 @@
   var endGameBtn = document.getElementById('end-game-btn');
   var endGamePlayingBtn = document.getElementById('end-game-playing-btn');
   var deleteGameBtn = document.getElementById('delete-game-btn');
+  var newGameBtn = document.getElementById('new-game-btn');
+  var newGameRounds = document.getElementById('new-game-rounds');
 
   // ===== Init =====
   var params = new URLSearchParams(window.location.search);
@@ -583,6 +585,51 @@
         window.location.href = 'index.html';
       });
     }
+  });
+
+  // New game in same room - resets everything, regenerates boards, keeps players
+  newGameBtn.addEventListener('click', function () {
+    if (!confirm('Start a fresh game? All boards will be regenerated and scores reset.')) return;
+
+    var totalRounds = parseInt(newGameRounds.value, 10);
+    var newBoardSeed = Math.random().toString(36).substring(2, 10);
+
+    // Shuffle new song order
+    var numbers = [];
+    for (var i = 1; i <= 32; i++) numbers.push(i);
+    for (var j = numbers.length - 1; j > 0; j--) {
+      var k = Math.floor(Math.random() * (j + 1));
+      var tmp = numbers[j];
+      numbers[j] = numbers[k];
+      numbers[k] = tmp;
+    }
+
+    // Update meta for new game
+    var updates = {
+      'meta/status': 'lobby',
+      'meta/currentRound': 1,
+      'meta/currentSongIndex': -1,
+      'meta/boardSeed': newBoardSeed,
+      'meta/totalRounds': totalRounds,
+      'meta/winnerName': null,
+      'meta/winnerId': null
+    };
+    updates['songOrder'] = numbers;
+    updates['calledSongs'] = [];
+
+    // Regenerate boards for all existing players and reset their state
+    var playerKeys = Object.keys(players);
+    for (var p = 0; p < playerKeys.length; p++) {
+      var pid = playerKeys[p];
+      var newBoard = window.generateBoard(newBoardSeed, pid);
+      var newMarks = [];
+      for (var m = 0; m < 16; m++) newMarks.push(false);
+      updates['players/' + pid + '/board'] = newBoard;
+      updates['players/' + pid + '/marks'] = newMarks;
+      updates['players/' + pid + '/claimedBingo'] = false;
+    }
+
+    window.db.ref('games/' + roomCode).update(updates);
   });
 
   // ===== Celebration =====
