@@ -56,9 +56,10 @@
   var nextRoundArea = document.getElementById('next-round-area');
   var nextRoundBtn = document.getElementById('next-round-btn');
   var gameOverArea = document.getElementById('game-over-area');
-  var endGameBtn = document.getElementById('end-game-btn');
+  // endGameBtn removed - replaced by per-section buttons
   var endGamePlayingBtn = document.getElementById('end-game-playing-btn');
-  var deleteGameBtn = document.getElementById('delete-game-btn');
+  var endGameFinishedBtn = document.getElementById('end-game-finished-btn');
+  var endGameLobbyBtn = document.getElementById('end-game-lobby-btn');
   var newGameBtn = document.getElementById('new-game-btn');
   var newGameRounds = document.getElementById('new-game-rounds');
 
@@ -189,19 +190,6 @@
     } else if (meta.status === 'finished') {
       finishedSection.classList.remove('hidden');
       updateFinishedView();
-    } else if (meta.status === 'ended') {
-      lobbySection.classList.add('hidden');
-      playingSection.classList.add('hidden');
-      finishedSection.classList.add('hidden');
-      // Show a simple ended message
-      var container = document.querySelector('.container-wide');
-      if (!document.getElementById('ended-msg')) {
-        var endedDiv = document.createElement('div');
-        endedDiv.id = 'ended-msg';
-        endedDiv.className = 'card text-center mt-3';
-        endedDiv.innerHTML = '<h2>Game Ended</h2><p class="text-muted">This game has been ended.</p><a href="index.html" class="btn btn-primary mt-2">Back to Home</a>';
-        container.appendChild(endedDiv);
-      }
     }
   }
 
@@ -569,23 +557,17 @@
     }
   });
 
-  // End game (from finished or playing)
+  // End game - deletes game data and goes back to lobby
   function endGame() {
-    if (confirm('Are you sure you want to end the game?')) {
-      window.db.ref('games/' + roomCode + '/meta/status').set('ended');
-    }
-  }
-  endGameBtn.addEventListener('click', endGame);
-  endGamePlayingBtn.addEventListener('click', endGame);
-
-  // Delete game - removes all data from Firebase
-  deleteGameBtn.addEventListener('click', function () {
-    if (confirm('Delete this game permanently? This will remove all data and kick all players.')) {
+    if (confirm('End this game? All data will be deleted and players will be sent home.')) {
       window.db.ref('games/' + roomCode).remove().then(function () {
         window.location.href = 'index.html';
       });
     }
-  });
+  }
+  endGamePlayingBtn.addEventListener('click', endGame);
+  endGameFinishedBtn.addEventListener('click', endGame);
+  endGameLobbyBtn.addEventListener('click', endGame);
 
   // New game in same room - resets everything, regenerates boards, keeps players
   newGameBtn.addEventListener('click', function () {

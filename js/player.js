@@ -322,13 +322,14 @@
         showCelebration(newMeta.winnerName || 'Someone', newMeta.winnerId || '');
       }
 
-      // Detect game ended
-      if (newMeta.status === 'ended') {
+      // Detect game ended/deleted (meta becomes empty)
+      if (!newMeta.status && oldStatus) {
         celebrationTitle.textContent = 'Game Over';
         celebrationWinner.textContent = 'Thanks for playing!';
         celebrationSubtitle.textContent = '';
         celebrationOverlay.classList.add('active');
         celebrationDismiss.textContent = 'Back to Home';
+        celebrationDismiss.disabled = false;
         celebrationDismiss.onclick = function () { window.location.href = 'index.html'; };
       }
 
