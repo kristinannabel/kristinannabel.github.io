@@ -102,10 +102,21 @@
                   <th style="text-align:left; padding:0.5rem; color:var(--text-secondary); border-bottom:1px solid var(--border);">Title</th>
                   <th style="text-align:left; padding:0.5rem; color:var(--text-secondary); border-bottom:1px solid var(--border);">Artist</th>
                   <th style="text-align:left; padding:0.5rem; color:var(--text-secondary); border-bottom:1px solid var(--border);">Category</th>
+                  <th style="text-align:left; padding:0.5rem; color:var(--text-secondary); border-bottom:1px solid var(--border);">Spotify</th>
                 </tr>
               </thead>
               <tbody id="song-table-body"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Spotify connect in lobby -->
+        <div class="card text-center" id="spotify-lobby-card">
+          <h3>🎵 Spotify</h3>
+          <p class="text-muted mb-1">Connect Spotify to auto-play songs during the game</p>
+          <span id="spotify-lobby-status" style="font-weight:600;">🔴 Not connected</span>
+          <div class="mt-1">
+            <button class="btn btn-success btn-sm" id="spotify-lobby-connect-btn">Connect Spotify</button>
           </div>
         </div>
 
@@ -127,6 +138,20 @@
           <p class="text-muted" id="round-requirement">Round 1: One line</p>
         </div>
 
+        <!-- Spotify Status -->
+        <div class="card text-center" id="spotify-card">
+          <span id="spotify-status" style="font-weight:600;">🔴 Spotify not connected</span>
+          <div class="mt-1">
+            <button class="btn btn-success btn-sm" id="spotify-connect-btn">🎵 Connect Spotify</button>
+          </div>
+          <div id="spotify-controls" class="hidden mt-1" style="display:flex; align-items:center; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" id="spotify-play-pause">⏸ Pause</button>
+            <label style="font-size:0.85rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.4rem;">
+              🔊 <input type="range" id="spotify-volume" min="0" max="100" value="80" style="width:80px;">
+            </label>
+          </div>
+        </div>
+
         <!-- Current Song -->
         <div class="now-playing" id="now-playing">
           <div class="now-playing-label">Now Playing</div>
@@ -137,7 +162,7 @@
 
         <!-- Next Song Button -->
         <div class="text-center mb-2">
-          <button class="btn btn-primary btn-lg" id="next-song-btn">Next Song</button>
+          <button class="btn btn-primary btn-lg" id="next-song-btn">▶ Next Song</button>
         </div>
 
         <!-- Called Songs -->
@@ -236,12 +261,16 @@
     };
   </script>
 
+  <!-- Spotify Web Playback SDK -->
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+
   <!-- App scripts -->
   <script src="js/firebase-config.js"></script>
   <script src="js/songs.js"></script>
   <script src="js/board.js"></script>
   <script src="js/bingo-check.js"></script>
   <script src="js/game.js"></script>
+  <script src="js/spotify.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

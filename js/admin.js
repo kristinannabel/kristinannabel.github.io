@@ -63,6 +63,11 @@
   var newGameBtn = document.getElementById('new-game-btn');
   var newGameRounds = document.getElementById('new-game-rounds');
 
+  // Spotify controls
+  var spotifyConnectBtn = document.getElementById('spotify-connect-btn');
+  var spotifyPlayPause = document.getElementById('spotify-play-pause');
+  var spotifyVolume = document.getElementById('spotify-volume');
+
   // ===== Init =====
   var params = new URLSearchParams(window.location.search);
   roomCode = params.get('room');
@@ -258,10 +263,24 @@
       var inputCategory = createEditableInput(i, 'category', song.category);
       tdCategory.appendChild(inputCategory);
 
+      var tdSpotify = document.createElement('td');
+      tdSpotify.style.padding = '0.4rem 0.5rem';
+      var searchBtn = document.createElement('button');
+      searchBtn.className = 'btn btn-secondary btn-sm';
+      searchBtn.textContent = song.spotifyUri ? '✓' : '🔍';
+      searchBtn.title = song.spotifyUri || 'Search Spotify';
+      searchBtn.style.fontSize = '0.75rem';
+      searchBtn.style.padding = '0.2em 0.5em';
+      searchBtn.addEventListener('click', (function (idx) {
+        return function () { searchSpotifyForSong(idx); };
+      })(i));
+      tdSpotify.appendChild(searchBtn);
+
       tr.appendChild(tdNum);
       tr.appendChild(tdTitle);
       tr.appendChild(tdArtist);
       tr.appendChild(tdCategory);
+      tr.appendChild(tdSpotify);
       songTableBody.appendChild(tr);
     }
   }
@@ -318,6 +337,40 @@
   startGameBtn.addEventListener('click', function () {
     window.db.ref('games/' + roomCode + '/meta/status').set('playing');
   });
+
+  // ===== Spotify Controls =====
+  var spotifyLobbyConnect = document.getElementById('spotify-lobby-connect-btn');
+  var spotifyLobbyStatus = document.getElementById('spotify-lobby-status');
+
+  function connectSpotify() {
+    if (window.spotifyAPI) window.spotifyAPI.connect();
+  }
+  if (spotifyConnectBtn) spotifyConnectBtn.addEventListener('click', connectSpotify);
+  if (spotifyLobbyConnect) spotifyLobbyConnect.addEventListener('click', connectSpotify);
+
+  // Sync lobby spotify status with main status
+  var spotifyStatusCheck = setInterval(function () {
+    if (!window.spotifyAPI) return;
+    var connected = window.spotifyAPI.isConnected();
+    if (spotifyLobbyStatus) {
+      spotifyLobbyStatus.textContent = connected ? '🟢 Connected' : '🔴 Not connected';
+      spotifyLobbyStatus.style.color = connected ? 'var(--success)' : 'var(--text-muted)';
+    }
+    if (connected) {
+      if (spotifyLobbyConnect) spotifyLobbyConnect.classList.add('hidden');
+      clearInterval(spotifyStatusCheck);
+    }
+  }, 1000);
+  if (spotifyPlayPause) {
+    spotifyPlayPause.addEventListener('click', function () {
+      if (window.spotifyAPI) window.spotifyAPI.togglePlay();
+    });
+  }
+  if (spotifyVolume) {
+    spotifyVolume.addEventListener('input', function () {
+      if (window.spotifyAPI) window.spotifyAPI.setVolume(parseInt(this.value, 10) / 100);
+    });
+  }
 
   // ===== Player List Rendering =====
   function renderPlayerList() {
@@ -447,6 +500,14 @@
     updates['calledSongs'] = newCalledSongs;
 
     window.db.ref('games/' + roomCode).update(updates);
+
+    // Auto-play via Spotify if connected
+    if (window.spotifyAPI && window.spotifyAPI.isConnected()) {
+      var song = findSongByNumber(songNum);
+      if (song && song.spotifyUri) {
+        window.spotifyAPI.play(song.spotifyUri);
+      }
+    }
   });
 
   // Render called songs list
@@ -613,6 +674,37 @@
 
     window.db.ref('games/' + roomCode).update(updates);
   });
+
+  // ===== Spotify Song Search =====
+  async function searchSpotifyForSong(songIndex) {
+    var token = window.spotifyAPI ? window.spotifyAPI.getToken() : null;
+    if (!token) {
+      alert('Connect to Spotify first to search for songs.');
+      return;
+    }
+
+    var song = songs[songIndex];
+    var query = encodeURIComponent(song.title + ' ' + song.artist);
+
+    try {
+      var response = await fetch('https://api.spotify.com/v1/search?q=' + query + '&type=track&limit=1', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      var data = await response.json();
+
+      if (data.tracks && data.tracks.items && data.tracks.items.length > 0) {
+        var track = data.tracks.items[0];
+        songs[songIndex].spotifyUri = track.uri;
+        renderSongTable();
+        alert('Found: ' + track.name + ' by ' + track.artists[0].name);
+      } else {
+        alert('No Spotify track found for "' + song.title + ' - ' + song.artist + '"');
+      }
+    } catch (err) {
+      console.error('Spotify search failed:', err);
+      alert('Search failed. Make sure Spotify is connected.');
+    }
+  }
 
   // ===== Celebration =====
   function showCelebration() {
