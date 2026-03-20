@@ -164,10 +164,15 @@
     });
     listeners.push({ ref: playersRef, event: 'value' });
 
-    // Bingo claim listener - watch for child_changed on players
+    // Player activity + bingo claim listener
     playersRef.on('child_changed', function (snap) {
       var playerId = snap.key;
       var playerData = snap.val();
+
+      // Track player clicks for cooldown timer
+      onPlayerActivity();
+
+      // Check for bingo claims
       if (playerData && playerData.claimedBingo === true && meta && meta.status === 'playing') {
         handleBingoClaim(playerId, playerData);
       }
@@ -506,24 +511,51 @@
     return null;
   }
 
-  // Next song - with 30s cooldown timer
+  // Next song - cooldown: 30s max OR 5s after last player click
   var nextSongTimer = null;
   var nextSongCountdown = 0;
+  var lastPlayerClickTime = 0;
+  var playerClickTimer = null;
+  var cooldownActive = false;
 
   function startNextSongCooldown() {
+    cooldownActive = true;
     nextSongBtn.disabled = true;
     nextSongCountdown = 30;
+    lastPlayerClickTime = Date.now();
     nextSongBtn.textContent = '⏳ Wait ' + nextSongCountdown + 's';
+
+    if (nextSongTimer) clearInterval(nextSongTimer);
     nextSongTimer = setInterval(function () {
       nextSongCountdown--;
+
+      // Check if 5s passed since last player click
+      var sinceLast = (Date.now() - lastPlayerClickTime) / 1000;
+      if (sinceLast >= 5 && lastPlayerClickTime > 0) {
+        unlockNextSong();
+        return;
+      }
+
       if (nextSongCountdown <= 0) {
-        clearInterval(nextSongTimer);
-        nextSongBtn.disabled = false;
-        nextSongBtn.textContent = '▶ Next Song';
+        unlockNextSong();
       } else {
         nextSongBtn.textContent = '⏳ Wait ' + nextSongCountdown + 's';
       }
     }, 1000);
+  }
+
+  function unlockNextSong() {
+    cooldownActive = false;
+    if (nextSongTimer) { clearInterval(nextSongTimer); nextSongTimer = null; }
+    nextSongBtn.disabled = false;
+    nextSongBtn.textContent = '▶ Next Song';
+  }
+
+  // Track when any player clicks their board (marks change)
+  function onPlayerActivity() {
+    if (cooldownActive) {
+      lastPlayerClickTime = Date.now();
+    }
   }
 
   nextSongBtn.addEventListener('click', function () {
