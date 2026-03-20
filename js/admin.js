@@ -515,31 +515,34 @@
   var nextSongTimer = null;
   var nextSongCountdown = 0;
   var lastPlayerClickTime = 0;
-  var playerClickTimer = null;
+  var playerHasClicked = false;
   var cooldownActive = false;
 
   function startNextSongCooldown() {
     cooldownActive = true;
+    playerHasClicked = false;
+    lastPlayerClickTime = 0;
     nextSongBtn.disabled = true;
     nextSongCountdown = 30;
-    lastPlayerClickTime = Date.now();
-    nextSongBtn.textContent = '⏳ Wait ' + nextSongCountdown + 's';
+    nextSongBtn.textContent = '⏳ 30s';
 
     if (nextSongTimer) clearInterval(nextSongTimer);
     nextSongTimer = setInterval(function () {
       nextSongCountdown--;
 
-      // Check if 5s passed since last player click
-      var sinceLast = (Date.now() - lastPlayerClickTime) / 1000;
-      if (sinceLast >= 5 && lastPlayerClickTime > 0) {
-        unlockNextSong();
-        return;
+      // Only check the 5s rule if a player has actually clicked
+      if (playerHasClicked) {
+        var sinceLast = (Date.now() - lastPlayerClickTime) / 1000;
+        if (sinceLast >= 5) {
+          unlockNextSong();
+          return;
+        }
       }
 
       if (nextSongCountdown <= 0) {
         unlockNextSong();
       } else {
-        nextSongBtn.textContent = '⏳ Wait ' + nextSongCountdown + 's';
+        nextSongBtn.textContent = '⏳ ' + nextSongCountdown + 's';
       }
     }, 1000);
   }
@@ -555,6 +558,7 @@
   function onPlayerActivity() {
     if (cooldownActive) {
       lastPlayerClickTime = Date.now();
+      playerHasClicked = true;
     }
   }
 
