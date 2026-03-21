@@ -361,6 +361,18 @@
       var resp = await fetch('https://api.spotify.com/v1/search?q=' + query + '&type=track&limit=5', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
+
+      // Token expired — clear it and prompt re-auth
+      if (resp.status === 401) {
+        sessionStorage.removeItem('spotify_access_token');
+        var lobbyStatus = document.getElementById('spotify-lobby-status');
+        var lobbyBtn = document.getElementById('spotify-lobby-connect-btn');
+        if (lobbyStatus) { lobbyStatus.textContent = '🔴 Session expired'; lobbyStatus.style.color = 'var(--danger)'; }
+        if (lobbyBtn) lobbyBtn.classList.remove('hidden');
+        alert('Spotify session expired. Please reconnect Spotify and try again.');
+        return null;
+      }
+
       var data = await resp.json();
 
       var bestTrack = null;
