@@ -168,7 +168,8 @@
       bingoBtn.textContent = '🎉 BINGO! 🎉';
     } else {
       bingoBtn.classList.remove('bingo-ready');
-      bingoBtn.textContent = 'BINGO';
+      var hints = { 1: 'Mark a full line first', 2: 'Mark two full lines first', 3: 'Mark all cells first' };
+      bingoBtn.textContent = hints[round] || 'BINGO';
     }
   }
 
@@ -410,10 +411,17 @@
         celebrationDismiss.onclick = function () { window.location.href = 'index.html'; };
       }
 
-      // Detect round increase while playing
+      // Detect round increase while playing — dismiss celebration, reset state
       if (newMeta.status === 'playing' && newMeta.currentRound > (oldRound || 1)) {
-        showToast('Round ' + newMeta.currentRound + ' starting!', 'var(--accent-secondary)', 3000);
+        celebrationOverlay.classList.remove('active');
         celebrationShown = false;
+        celebrationDismiss.disabled = false;
+        celebrationDismiss.textContent = 'Continue';
+        bingoBtn.disabled = false;
+        bingoBtn.textContent = 'BINGO';
+        bingoBtn.classList.remove('bingo-ready');
+        updateBingoButton();
+        showToast('🎯 Round ' + newMeta.currentRound + ' starting!', 'var(--accent-secondary)', 3000);
       }
 
       // Detect new game started (admin restarted in same room)

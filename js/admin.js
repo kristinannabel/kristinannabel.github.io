@@ -808,9 +808,10 @@
   nextRoundBtn.addEventListener('click', function () {
     if (!meta) return;
     var newRound = (meta.currentRound || 1) + 1;
+    var currentIdx = meta.currentSongIndex != null ? meta.currentSongIndex : -1;
     var updates = {
       'meta/currentRound': newRound,
-      'meta/currentSongIndex': meta.currentSongIndex, // keep current position
+      'meta/currentSongIndex': currentIdx, // keep song position (songs carry over)
       'meta/winnerName': null,
       'meta/winnerId': null,
       'meta/status': 'playing'
@@ -822,6 +823,11 @@
     for (var i = 0; i < keys.length; i++) {
       window.db.ref('games/' + roomCode + '/players/' + keys[i] + '/claimedBingo').set(false);
     }
+
+    // Reset admin state for new round
+    clickedPlayers = {};
+    stopSongTimer();
+    if (adminEmbedEl) { adminEmbedEl.innerHTML = ''; adminEmbedEl.dataset.currentTrack = ''; }
   });
 
   // End game - deletes game data and goes back to lobby
