@@ -373,9 +373,15 @@
         });
       }
 
-      // Detect game going from lobby to playing
+      // Detect game going from lobby to playing — reload songs in case admin edited them
       if (newMeta.status === 'playing' && oldStatus === 'lobby') {
         showToast('🎶 Game started! Listen for songs!', 'var(--success)', 3000);
+        songsRef.once('value', function (songSnap) {
+          songs = songSnap.val() || [];
+          buildSongMap();
+          renderSongList();
+          renderBoard();
+        });
       }
     });
 
