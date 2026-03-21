@@ -44,67 +44,74 @@
         </form>
       </div>
 
-      <div class="divider-text">DJ / Admin</div>
-
-      <!-- Create New Game -->
-      <div class="card">
-        <h2>Create New Game</h2>
-        <form id="create-form" autocomplete="off">
-          <div class="form-group">
-            <label for="create-pin">Admin PIN (4+ digits)</label>
-            <input
-              type="password"
-              id="create-pin"
-              class="form-input"
-              placeholder="Choose a PIN"
-              minlength="4"
-              inputmode="numeric"
-              required
-            >
-          </div>
-          <div class="form-group">
-            <label for="create-rounds">Number of Rounds</label>
-            <select id="create-rounds" class="form-input">
-              <option value="1">1 Round</option>
-              <option value="2">2 Rounds</option>
-              <option value="3" selected>3 Rounds</option>
-            </select>
-          </div>
-          <div class="error-msg" id="create-error"></div>
-          <button type="submit" class="btn btn-primary btn-block btn-lg">Create Game</button>
-        </form>
+      <!-- Admin toggle -->
+      <div class="text-center mt-2">
+        <button type="button" class="btn btn-outline btn-sm" id="admin-toggle" style="color:var(--text-muted); border-color:var(--border); font-size:0.85rem;">
+          🎧 DJ / Admin Panel ▾
+        </button>
       </div>
 
-      <!-- Admin Login to existing game -->
-      <div class="card">
-        <h2>Rejoin as Admin</h2>
-        <form id="admin-login-form" autocomplete="off">
-          <div class="form-group">
-            <label for="admin-code">Room Code</label>
-            <input
-              type="text"
-              id="admin-code"
-              class="form-input"
-              placeholder="BINGO-XXXX"
-              maxlength="10"
-              required
-              style="text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600;"
-            >
-          </div>
-          <div class="form-group">
-            <label for="admin-pin">Admin PIN</label>
-            <input
-              type="password"
-              id="admin-pin"
-              class="form-input"
-              placeholder="Enter PIN"
-              inputmode="numeric"
-              required
-            >
-          </div>
-          <div class="error-msg" id="admin-error"></div>
-          <button type="submit" class="btn btn-secondary btn-block">Rejoin Game</button>
-        </form>
+      <div id="admin-area" class="hidden" style="width:100%; flex-direction:column; gap:1.5rem;">
+        <!-- Create New Game -->
+        <div class="card">
+          <h2>Create New Game</h2>
+          <form id="create-form" autocomplete="off">
+            <div class="form-group">
+              <label for="create-pin">Admin PIN (4+ digits)</label>
+              <input
+                type="password"
+                id="create-pin"
+                class="form-input"
+                placeholder="Choose a PIN"
+                minlength="4"
+                inputmode="numeric"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label for="create-rounds">Number of Rounds</label>
+              <select id="create-rounds" class="form-input">
+                <option value="1">1 Round</option>
+                <option value="2">2 Rounds</option>
+                <option value="3" selected>3 Rounds</option>
+              </select>
+            </div>
+            <div class="error-msg" id="create-error"></div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg">Create Game</button>
+          </form>
+        </div>
+
+        <!-- Admin Login to existing game -->
+        <div class="card">
+          <h2>Rejoin Existing Game</h2>
+          <form id="admin-login-form" autocomplete="off">
+            <div class="form-group">
+              <label for="admin-code">Room Code</label>
+              <input
+                type="text"
+                id="admin-code"
+                class="form-input"
+                placeholder="BINGO-XXXX"
+                maxlength="10"
+                required
+                style="text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600;"
+              >
+            </div>
+            <div class="form-group">
+              <label for="admin-pin">Admin PIN</label>
+              <input
+                type="password"
+                id="admin-pin"
+                class="form-input"
+                placeholder="Enter PIN"
+                inputmode="numeric"
+                required
+              >
+            </div>
+            <div class="error-msg" id="admin-error"></div>
+            <button type="submit" class="btn btn-secondary btn-block">Rejoin Game</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -129,6 +136,22 @@
       var adminLoginForm = document.getElementById('admin-login-form');
       var adminError = document.getElementById('admin-error');
       var adminCodeInput = document.getElementById('admin-code');
+      var adminToggle = document.getElementById('admin-toggle');
+      var adminArea = document.getElementById('admin-area');
+
+      // Toggle admin panel with slide animation
+      adminToggle.addEventListener('click', function () {
+        var isHidden = adminArea.classList.contains('hidden');
+        if (isHidden) {
+          adminArea.classList.remove('hidden');
+          adminArea.style.display = 'flex';
+          adminToggle.innerHTML = '🎧 DJ / Admin Panel &#9652;';
+        } else {
+          adminArea.classList.add('hidden');
+          adminArea.style.display = '';
+          adminToggle.innerHTML = '🎧 DJ / Admin Panel &#9662;';
+        }
+      });
 
       // Auto-uppercase room code inputs
       joinCodeInput.addEventListener('input', function () {
