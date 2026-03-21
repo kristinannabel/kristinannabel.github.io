@@ -172,8 +172,8 @@
       var playerData = snap.val();
       if (!playerData) return;
 
-      // Track player clicks for cooldown timer
-      onPlayerActivity();
+      // Track player clicks
+      onPlayerActivity(playerId);
 
       // Check for bingo claims - only process fresh claims
       var claimKey = playerId + '_' + (meta ? meta.currentRound : 0);
@@ -458,13 +458,13 @@
         if (pl.claimedBingo) {
           statusSpan2.className = 'player-status bingo-claimed';
           statusSpan2.textContent = 'BINGO claimed!';
-        } else if (cooldownActive && playerHasClickedSinceSnapshot(pid)) {
+        } else if (playerHasClickedSinceSnapshot(pid)) {
           statusSpan2.className = 'player-status';
           statusSpan2.style.color = 'var(--success)';
           statusSpan2.textContent = '✓ Clicked';
         } else {
           statusSpan2.className = 'player-status';
-          statusSpan2.textContent = cooldownActive ? '⏳ Waiting' : 'Playing';
+          statusSpan2.textContent = songSeconds > 0 ? '⏳ Waiting' : 'Playing';
         }
         li2.appendChild(nameSpan2);
         li2.appendChild(statusSpan2);
@@ -521,76 +521,39 @@
     return null;
   }
 
-  // Next song - cooldown: 30s max OR 5s after last player click
-  var nextSongTimer = null;
-  var nextSongCountdown = 0;
-  var lastPlayerClickTime = 0;
-  var playerHasClicked = false;
-  var cooldownActive = false;
-  var marksSnapshot = {}; // playerId -> mark count when song was called
+  // Song timer - count up from 0 when a new song is called
+  var songTimer = null;
+  var songSeconds = 0;
+  var songTimerEl = document.getElementById('song-timer');
 
-  function takeMarksSnapshot() {
-    marksSnapshot = {};
-    var keys = Object.keys(players);
-    for (var i = 0; i < keys.length; i++) {
-      var marks = players[keys[i]].marks || [];
-      var count = 0;
-      for (var m = 0; m < marks.length; m++) { if (marks[m]) count++; }
-      marksSnapshot[keys[i]] = count;
-    }
-  }
+  // Track which players clicked since last song
+  var clickedPlayers = {}; // playerId -> true
 
-  function playerHasClickedSinceSnapshot(playerId) {
-    var pl = players[playerId];
-    if (!pl || !pl.marks) return false;
-    var currentCount = 0;
-    for (var m = 0; m < pl.marks.length; m++) { if (pl.marks[m]) currentCount++; }
-    var prevCount = marksSnapshot[playerId] || 0;
-    return currentCount !== prevCount;
-  }
-
-  function startNextSongCooldown() {
-    cooldownActive = true;
-    playerHasClicked = false;
-    lastPlayerClickTime = 0;
-    nextSongBtn.disabled = true;
-    nextSongCountdown = 20;
-    nextSongBtn.textContent = '⏳ 20s';
-
-    if (nextSongTimer) clearInterval(nextSongTimer);
-    nextSongTimer = setInterval(function () {
-      nextSongCountdown--;
-
-      // Only check the 5s rule if a player has actually clicked
-      if (playerHasClicked) {
-        var sinceLast = (Date.now() - lastPlayerClickTime) / 1000;
-        if (sinceLast >= 5) {
-          unlockNextSong();
-          return;
-        }
-      }
-
-      if (nextSongCountdown <= 0) {
-        unlockNextSong();
-      } else {
-        nextSongBtn.textContent = '⏳ ' + nextSongCountdown + 's';
-      }
+  function startSongTimer() {
+    songSeconds = 0;
+    clickedPlayers = {};
+    if (songTimer) clearInterval(songTimer);
+    if (songTimerEl) songTimerEl.textContent = '0:00';
+    songTimer = setInterval(function () {
+      songSeconds++;
+      var mins = Math.floor(songSeconds / 60);
+      var secs = songSeconds % 60;
+      if (songTimerEl) songTimerEl.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
     }, 1000);
   }
 
-  function unlockNextSong() {
-    cooldownActive = false;
-    if (nextSongTimer) { clearInterval(nextSongTimer); nextSongTimer = null; }
-    nextSongBtn.disabled = false;
-    nextSongBtn.textContent = '▶ Next Song';
+  function stopSongTimer() {
+    if (songTimer) { clearInterval(songTimer); songTimer = null; }
   }
 
-  // Track when any player clicks their board (marks change)
-  function onPlayerActivity() {
-    if (cooldownActive) {
-      lastPlayerClickTime = Date.now();
-      playerHasClicked = true;
-    }
+  // Track when any player clicks their board
+  function onPlayerActivity(playerId) {
+    clickedPlayers[playerId] = true;
+    renderPlayerList();
+  }
+
+  function playerHasClickedSinceSnapshot(playerId) {
+    return !!clickedPlayers[playerId];
   }
 
   nextSongBtn.addEventListener('click', function () {
@@ -610,18 +573,15 @@
 
     window.db.ref('games/' + roomCode).update(updates);
 
-    // Snapshot marks before players react
-    takeMarksSnapshot();
-
-    // Play Spotify embed on admin too
+    // Play Spotify embed on admin
     var song = findSongByNumber(songNum);
     if (song && song.spotifyUri) {
       var trackId = song.spotifyUri.replace('spotify:track:', '');
       playAdminEmbed(trackId);
     }
 
-    // Start 30s cooldown
-    startNextSongCooldown();
+    // Start count-up timer and reset click tracking
+    startSongTimer();
   });
 
   // Render called songs list
@@ -752,10 +712,13 @@
 
   // New game in same room - resets everything, regenerates boards, keeps players
   newGameBtn.addEventListener('click', function () {
-    if (!confirm('Start a fresh game? All boards will be regenerated and scores reset.')) return;
+    if (!confirm('Start a fresh game? New songs will be picked and all boards regenerated.')) return;
 
     var totalRounds = parseInt(newGameRounds.value, 10);
     var newBoardSeed = Math.random().toString(36).substring(2, 10);
+
+    // Pick new random songs from pool
+    var newSongs = window.pickSongsForGame();
 
     // Shuffle new song order
     var numbers = [];
@@ -777,6 +740,7 @@
       'meta/winnerName': null,
       'meta/winnerId': null
     };
+    updates['songs'] = newSongs;
     updates['songOrder'] = numbers;
     updates['calledSongs'] = [];
 

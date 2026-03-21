@@ -74,7 +74,7 @@ async function createGame(pin, totalRounds) {
     totalRounds: totalRounds
   });
 
-  await gameRef.child('songs').set(window.DEFAULT_SONGS);
+  await gameRef.child('songs').set(window.pickSongsForGame());
   await gameRef.child('songOrder').set(songOrder);
   await gameRef.child('calledSongs').set([]);
 
