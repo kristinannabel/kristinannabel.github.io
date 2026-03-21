@@ -9,19 +9,13 @@
 <body>
   <div class="player-view">
     <!-- Header -->
-    <div class="header">
-      <div class="nav-bar">
-        <div class="room-info">
-          <span class="room-code-small" id="room-code-display">BINGO-????</span>
-        </div>
-        <div>
-          <span class="player-name" id="player-name-display">Loading...</span>
-        </div>
-        <div>
-          <span class="round-indicator" id="round-info">Round 1</span>
-        </div>
+    <div class="player-header">
+      <div class="player-header-name" id="player-name-display">Loading...</div>
+      <div class="player-header-row">
+        <span class="player-header-code" id="room-code-display">BINGO-????</span>
+        <span class="round-indicator" id="round-info">Round 1</span>
       </div>
-      <p class="round-info text-muted mt-1" id="round-requirement"></p>
+      <div class="player-header-req" id="round-requirement"></div>
     </div>
 
     <div class="container">
