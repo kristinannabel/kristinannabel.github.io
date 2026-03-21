@@ -347,7 +347,6 @@
   });
 
   // ===== Spotify song linking =====
-  var linkSpotifyBtn = document.getElementById('link-spotify-btn');
   var spotifyLinkStatus = document.getElementById('spotify-link-status');
 
   // Search Spotify for a single song, return URI or null
@@ -431,16 +430,6 @@
 
     if (statusEl) statusEl.textContent = '✓ All ' + songs.length + ' songs linked';
     return true;
-  }
-
-  // Link Spotify button in lobby
-  if (linkSpotifyBtn) {
-    linkSpotifyBtn.addEventListener('click', async function () {
-      linkSpotifyBtn.disabled = true;
-      var ok = await linkAllSongs(spotifyLinkStatus);
-      linkSpotifyBtn.disabled = false;
-      linkSpotifyBtn.textContent = ok ? '✓ Linked' : '🔗 Link Songs';
-    });
   }
 
   // Update link status when songs load
@@ -624,6 +613,7 @@
   function startSongTimer() {
     songSeconds = 0;
     clickedPlayers = {};
+    renderPlayerList();
     if (songTimer) clearInterval(songTimer);
     if (songTimerEl) songTimerEl.textContent = '0:00';
     songTimer = setInterval(function () {
