@@ -140,10 +140,24 @@
     }
   }
 
-  // ---- Check if player has a valid bingo pattern (marks + called songs) ----
+  // ---- Check if marks form a bingo pattern (ignoring whether songs are correct) ----
   function hasPatternForRound(round) {
-    // Use the real bingo check — same as server-side verification
-    return window.checkBingo(board, marks, calledSongs, round);
+    round = parseInt(round, 10) || 1;
+    if (round === 3) {
+      for (var k = 0; k < 16; k++) { if (!marks[k]) return false; }
+      return true;
+    }
+    var lines = window.WINNING_LINES;
+    var completedLines = 0;
+    for (var l = 0; l < lines.length; l++) {
+      var complete = true;
+      for (var j = 0; j < lines[l].length; j++) {
+        if (!marks[lines[l][j]]) { complete = false; break; }
+      }
+      if (complete) completedLines++;
+    }
+    if (round === 1) return completedLines >= 1;
+    return completedLines >= 2;
   }
 
   function updateBingoButton() {
