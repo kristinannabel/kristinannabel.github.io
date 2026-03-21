@@ -17,7 +17,7 @@ window.SONG_POOL = [
   { title: "Riding", artist: "Dagny", category: "Norske sanger" },
   { title: "Sommerfuggel i vinterland", artist: "Hellbillies", category: "Norske sanger" },
   { title: "Alt jeg ønsker meg", artist: "Odd Nordstoga", category: "Norske sanger" },
-  { title: "Optimist", artist: "Postgirobygget", category: "Norske sanger" },
+  { title: "Tenk om", artist: "Postgirobygget", category: "Norske sanger" },
   { title: "Maestro", artist: "Kaizers Orchestra", category: "Norske sanger" },
   { title: "The Fox", artist: "Ylvis", category: "Norske sanger" },
   { title: "Hunting High and Low", artist: "a-ha", category: "Norske sanger" },
