@@ -552,7 +552,7 @@
           statusSpan2.textContent = '✓ Clicked';
         } else {
           statusSpan2.className = 'player-status';
-          statusSpan2.textContent = songSeconds > 0 ? '⏳ Waiting' : 'Playing';
+          statusSpan2.textContent = (meta && meta.status === 'playing') ? '⏳' : 'Joined';
         }
         li2.appendChild(nameSpan2);
         li2.appendChild(statusSpan2);
