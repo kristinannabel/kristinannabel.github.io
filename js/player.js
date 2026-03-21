@@ -147,7 +147,7 @@
   }
 
   function updateBingoButton() {
-    var round = (meta && meta.currentRound) ? meta.currentRound : 1;
+    var round = (meta && meta.currentRound) ? parseInt(meta.currentRound, 10) : 1;
     var ready = hasPatternForRound(round);
     bingoBtn.disabled = !ready;
     if (ready) {
@@ -364,6 +364,7 @@
       calledSongs = snap.val() || [];
       if (!Array.isArray(calledSongs)) calledSongs = [];
       renderBoard();
+      updateBingoButton();
     });
 
     // Listen for meta changes

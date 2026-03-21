@@ -30,6 +30,7 @@ window.WINNING_LINES = [
  * @returns {boolean} True if the player has achieved bingo for the round.
  */
 function checkBingo(board, marks, calledSongs, currentRound) {
+  currentRound = parseInt(currentRound, 10) || 1;
   // Build a set of called songs for fast lookup
   var calledSet = {};
   for (var c = 0; c < calledSongs.length; c++) {
