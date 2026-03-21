@@ -947,6 +947,42 @@ select.form-input {
   to { transform: rotate(360deg); }
 }
 
+/* ===== Mobile Tabs (player view) ===== */
+.mobile-tabs {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-tab {
+  flex: 1;
+  padding: 0.75em 0;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  border-bottom: 3px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.mobile-tab:not(.active):hover {
+  color: var(--text-secondary);
+}
+
+/* Tab content visibility managed by .hidden class on mobile,
+   overridden to always show on desktop via media query */
+
 /* ===== Responsive ===== */
 @media (min-width: 640px) {
   .landing-title {
@@ -969,6 +1005,20 @@ select.form-input {
 }
 
 @media (min-width: 768px) {
+  /* Hide mobile tabs on desktop */
+  .mobile-tabs {
+    display: none;
+  }
+
+  /* Show both tabs as side-by-side layout */
+  #tab-board, #tab-songs {
+    display: block !important;
+  }
+
+  #tab-board.hidden, #tab-songs.hidden {
+    display: block !important;
+  }
+
   .song-list-grid {
     grid-template-columns: repeat(4, 1fr);
   }

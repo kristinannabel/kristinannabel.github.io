@@ -18,30 +18,62 @@
       <div class="player-header-req" id="round-requirement"></div>
     </div>
 
+    <!-- Mobile Tabs (hidden on desktop) -->
+    <div class="mobile-tabs" id="mobile-tabs">
+      <button class="mobile-tab active" data-tab="board">🎯 Board</button>
+      <button class="mobile-tab" data-tab="songs">🎵 Songs</button>
+    </div>
+
     <div class="container">
-      <!-- Bingo Board -->
-      <div class="bingo-board" id="bingo-board"></div>
+      <!-- Board Tab Content -->
+      <div class="tab-content" id="tab-board">
+        <div class="bingo-board" id="bingo-board"></div>
 
-      <!-- BINGO Button -->
-      <div class="text-center mt-2 mb-2">
-        <button class="bingo-btn" id="bingo-btn">
-          🎉 BINGO! 🎉
-        </button>
-      </div>
-
-      <!-- Toast area -->
-      <div id="toast-area" class="text-center mb-2" style="min-height:1.5em;">
-        <span id="toast-msg" class="hidden" style="padding:0.4em 1em; border-radius:999px; font-weight:600; font-size:0.95rem;"></span>
-      </div>
-
-      <!-- Song List -->
-      <div class="card">
-        <div class="card-header">
-          <h3>Song List</h3>
+        <div class="text-center mt-2 mb-2">
+          <button class="bingo-btn" id="bingo-btn">
+            🎉 BINGO! 🎉
+          </button>
         </div>
-        <div class="song-list-grid" id="song-list"></div>
+
+        <div id="toast-area" class="text-center mb-2" style="min-height:1.5em;">
+          <span id="toast-msg" class="hidden" style="padding:0.4em 1em; border-radius:999px; font-weight:600; font-size:0.95rem;"></span>
+        </div>
+      </div>
+
+      <!-- Songs Tab Content (hidden on mobile by default) -->
+      <div class="tab-content hidden" id="tab-songs">
+        <div class="card">
+          <div class="card-header">
+            <h3>🎵 Song List</h3>
+          </div>
+          <div class="song-list-grid" id="song-list"></div>
+        </div>
       </div>
     </div>
+
+    <script>
+      (function () {
+        var tabs = document.querySelectorAll('.mobile-tab');
+        var boardTab = document.getElementById('tab-board');
+        var songsTab = document.getElementById('tab-songs');
+
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].addEventListener('click', function () {
+            for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+            this.classList.add('active');
+
+            var target = this.dataset.tab;
+            if (target === 'board') {
+              boardTab.classList.remove('hidden');
+              songsTab.classList.add('hidden');
+            } else {
+              boardTab.classList.add('hidden');
+              songsTab.classList.remove('hidden');
+            }
+          });
+        }
+      })();
+    </script>
   </div>
 
   <!-- Winner Celebration Overlay -->
