@@ -140,27 +140,14 @@
     }
   }
 
-  // ---- Check if marks form a potential bingo (ignoring calledSongs) ----
+  // ---- Check if player has a valid bingo pattern (marks + called songs) ----
   function hasPatternForRound(round) {
-    if (round === 3) {
-      for (var k = 0; k < 16; k++) { if (!marks[k]) return false; }
-      return true;
-    }
-    var lines = window.WINNING_LINES;
-    var completedLines = 0;
-    for (var l = 0; l < lines.length; l++) {
-      var complete = true;
-      for (var j = 0; j < lines[l].length; j++) {
-        if (!marks[lines[l][j]]) { complete = false; break; }
-      }
-      if (complete) completedLines++;
-    }
-    if (round === 1) return completedLines >= 1;
-    return completedLines >= 2;
+    // Use the real bingo check — same as server-side verification
+    return window.checkBingo(board, marks, calledSongs, round);
   }
 
   function updateBingoButton() {
-    var round = meta.currentRound || 1;
+    var round = (meta && meta.currentRound) ? meta.currentRound : 1;
     var ready = hasPatternForRound(round);
     bingoBtn.disabled = !ready;
     if (ready) {
@@ -168,8 +155,7 @@
       bingoBtn.textContent = '🎉 BINGO! 🎉';
     } else {
       bingoBtn.classList.remove('bingo-ready');
-      var hints = { 1: 'Mark a full line first', 2: 'Mark two full lines first', 3: 'Mark all cells first' };
-      bingoBtn.textContent = hints[round] || 'BINGO';
+      bingoBtn.textContent = 'BINGO';
     }
   }
 
