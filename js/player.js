@@ -89,41 +89,53 @@
   }
 
   // ---- Render Bingo Board ----
-  function renderBoard() {
-    boardEl.innerHTML = '';
-    for (var i = 0; i < 16; i++) {
-      var cell = document.createElement('div');
-      cell.className = 'bingo-cell';
-      cell.dataset.index = i;
+  var boardBuilt = false;
 
-      var songNum = board[i];
-      var isMarked = marks[i] === true;
+  function renderBoard(forceRebuild) {
+    // First render or forced rebuild: build all cells
+    if (!boardBuilt || forceRebuild || boardEl.children.length !== 16) {
+      boardBuilt = false;
+      boardEl.innerHTML = '';
+      for (var i = 0; i < 16; i++) {
+        var cell = document.createElement('div');
+        cell.className = 'bingo-cell';
+        cell.dataset.index = i;
 
-      if (isMarked) {
-        cell.classList.add('marked');
+        var songNum = board[i];
+
+        var numSpan = document.createElement('span');
+        numSpan.className = 'song-number';
+        numSpan.textContent = songNum;
+        cell.appendChild(numSpan);
+
+        var song = songMap[songNum];
+        if (song) {
+          var titleSpan = document.createElement('span');
+          titleSpan.className = 'song-title';
+          titleSpan.textContent = song.title;
+          cell.appendChild(titleSpan);
+        }
+
+        cell.addEventListener('click', (function (idx) {
+          return function () { toggleMark(idx); };
+        })(i));
+
+        boardEl.appendChild(cell);
       }
+      boardBuilt = true;
+    }
 
-      var numSpan = document.createElement('span');
-      numSpan.className = 'song-number';
-      numSpan.textContent = songNum;
-      cell.appendChild(numSpan);
-
-      // Show song title in small text
-      var song = songMap[songNum];
-      if (song) {
-        var titleSpan = document.createElement('span');
-        titleSpan.className = 'song-title';
-        titleSpan.textContent = song.title;
-        cell.appendChild(titleSpan);
+    // Update marks without rebuilding (no flicker)
+    for (var j = 0; j < 16; j++) {
+      var el = boardEl.children[j];
+      if (!el) continue;
+      var wasMarked = el.classList.contains('marked');
+      var isMarked = marks[j] === true;
+      if (isMarked && !wasMarked) {
+        el.classList.add('marked');
+      } else if (!isMarked && wasMarked) {
+        el.classList.remove('marked');
       }
-
-      cell.addEventListener('click', (function (idx) {
-        return function () {
-          toggleMark(idx);
-        };
-      })(i));
-
-      boardEl.appendChild(cell);
     }
   }
 
@@ -373,7 +385,7 @@
               var d = psnap.val();
               board = d.board || [];
               marks = d.marks || [];
-              renderBoard();
+              renderBoard(true);
             }
           });
         });
@@ -386,7 +398,7 @@
           songs = songSnap.val() || [];
           buildSongMap();
           renderSongList();
-          renderBoard();
+          renderBoard(true);
         });
       }
     });
