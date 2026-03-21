@@ -151,6 +151,7 @@
     songsRef.on('value', function (snap) {
       songs = snap.val() || [];
       renderSongTable();
+      updateSpotifyLinkStatus();
     });
     listeners.push({ ref: songsRef, event: 'value' });
 
@@ -345,89 +346,137 @@
     });
   });
 
-  // Start game - check all songs have Spotify track URIs
-  startGameBtn.addEventListener('click', async function () {
-    var token = window.spotifyAPI ? window.spotifyAPI.getToken() : null;
+  // ===== Spotify song linking =====
+  var linkSpotifyBtn = document.getElementById('link-spotify-btn');
+  var spotifyLinkStatus = document.getElementById('spotify-link-status');
 
-    // Check for missing Spotify URIs
+  // Search Spotify for a single song, return URI or null
+  async function searchSpotifyTrack(title, artist, token) {
+    try {
+      var query = encodeURIComponent('track:"' + title + '" artist:"' + artist + '"');
+      var resp = await fetch('https://api.spotify.com/v1/search?q=' + query + '&type=track&limit=5', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      var data = await resp.json();
+
+      var bestTrack = null;
+      if (data.tracks && data.tracks.items) {
+        var titleLower = title.toLowerCase();
+        for (var t = 0; t < data.tracks.items.length; t++) {
+          if (data.tracks.items[t].name.toLowerCase() === titleLower) {
+            bestTrack = data.tracks.items[t];
+            break;
+          }
+        }
+        if (!bestTrack && data.tracks.items.length > 0) {
+          bestTrack = data.tracks.items[0];
+        }
+      }
+
+      if (bestTrack) return bestTrack.uri;
+
+      // Fallback: simpler query
+      var fbQuery = encodeURIComponent(title + ' ' + artist);
+      var fbResp = await fetch('https://api.spotify.com/v1/search?q=' + fbQuery + '&type=track&limit=1', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      var fbData = await fbResp.json();
+      if (fbData.tracks && fbData.tracks.items && fbData.tracks.items.length > 0) {
+        return fbData.tracks.items[0].uri;
+      }
+    } catch (err) { /* ignore */ }
+    return null;
+  }
+
+  // Link all songs missing Spotify URIs, save to Firebase
+  async function linkAllSongs(statusEl) {
+    var token = window.spotifyAPI ? window.spotifyAPI.getToken() : null;
+    if (!token) {
+      alert('Connect Spotify first!');
+      return false;
+    }
+
     var missing = [];
     for (var i = 0; i < songs.length; i++) {
       if (!songs[i].spotifyUri) missing.push(i);
     }
 
-    // Auto-search if any are missing
-    if (missing.length > 0) {
-      if (!token) {
-        alert('Connect Spotify first! ' + missing.length + ' songs need Spotify links.');
-        return;
-      }
-
-      startGameBtn.disabled = true;
-      startGameBtn.textContent = 'Linking songs... (0/' + missing.length + ')';
-
-      var failed = [];
-      for (var m = 0; m < missing.length; m++) {
-        var idx = missing[m];
-        var song = songs[idx];
-        startGameBtn.textContent = 'Linking songs... (' + (m + 1) + '/' + missing.length + ')';
-
-        try {
-          // Use Spotify's field filters for accurate matching
-          var query = encodeURIComponent('track:"' + song.title + '" artist:"' + song.artist + '"');
-          var resp = await fetch('https://api.spotify.com/v1/search?q=' + query + '&type=track&limit=5', {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          var data = await resp.json();
-
-          // Find best match - prefer exact title match
-          var bestTrack = null;
-          if (data.tracks && data.tracks.items) {
-            var titleLower = song.title.toLowerCase();
-            for (var t = 0; t < data.tracks.items.length; t++) {
-              var candidate = data.tracks.items[t];
-              if (candidate.name.toLowerCase() === titleLower) {
-                bestTrack = candidate;
-                break;
-              }
-            }
-            // Fallback to first result if no exact match
-            if (!bestTrack && data.tracks.items.length > 0) {
-              bestTrack = data.tracks.items[0];
-            }
-          }
-
-          if (bestTrack) {
-            songs[idx].spotifyUri = bestTrack.uri;
-          } else {
-            // Retry with simpler query as fallback
-            var fallbackQuery = encodeURIComponent(song.title + ' ' + song.artist);
-            var fbResp = await fetch('https://api.spotify.com/v1/search?q=' + fallbackQuery + '&type=track&limit=1', {
-              headers: { 'Authorization': 'Bearer ' + token }
-            });
-            var fbData = await fbResp.json();
-            if (fbData.tracks && fbData.tracks.items && fbData.tracks.items.length > 0) {
-              songs[idx].spotifyUri = fbData.tracks.items[0].uri;
-            } else {
-              failed.push(song.number + '. ' + song.title);
-            }
-          }
-        } catch (err) {
-          failed.push(song.number + '. ' + song.title);
-        }
-      }
-
-      if (failed.length > 0) {
-        alert(failed.length + ' songs not found on Spotify:\n' + failed.slice(0, 5).join('\n') + (failed.length > 5 ? '\n...and ' + (failed.length - 5) + ' more' : '') + '\n\nFix the song names and try again.');
-        startGameBtn.disabled = false;
-        startGameBtn.textContent = 'Start Game';
-        return;
-      }
-
-      await window.db.ref('games/' + roomCode + '/songs').set(songs);
+    if (missing.length === 0) {
+      if (statusEl) statusEl.textContent = '✓ All songs linked';
+      return true;
     }
 
-    startGameBtn.disabled = false;
-    startGameBtn.textContent = 'Start Game';
+    var failed = [];
+    for (var m = 0; m < missing.length; m++) {
+      var idx = missing[m];
+      var song = songs[idx];
+      if (statusEl) statusEl.textContent = 'Linking... (' + (m + 1) + '/' + missing.length + ')';
+
+      var uri = await searchSpotifyTrack(song.title, song.artist, token);
+      if (uri) {
+        songs[idx].spotifyUri = uri;
+      } else {
+        failed.push(song.number + '. ' + song.title);
+      }
+    }
+
+    // Save to Firebase (persists URIs for next time)
+    await window.db.ref('games/' + roomCode + '/songs').set(songs);
+
+    if (failed.length > 0) {
+      if (statusEl) statusEl.textContent = failed.length + ' songs not found';
+      alert(failed.length + ' songs not found on Spotify:\n' + failed.slice(0, 5).join('\n') + (failed.length > 5 ? '\n...and ' + (failed.length - 5) + ' more' : '') + '\n\nFix the song names and try again.');
+      return false;
+    }
+
+    if (statusEl) statusEl.textContent = '✓ All ' + songs.length + ' songs linked';
+    return true;
+  }
+
+  // Link Spotify button in lobby
+  if (linkSpotifyBtn) {
+    linkSpotifyBtn.addEventListener('click', async function () {
+      linkSpotifyBtn.disabled = true;
+      var ok = await linkAllSongs(spotifyLinkStatus);
+      linkSpotifyBtn.disabled = false;
+      linkSpotifyBtn.textContent = ok ? '✓ Linked' : '🔗 Link Songs';
+    });
+  }
+
+  // Update link status when songs load
+  function updateSpotifyLinkStatus() {
+    if (!spotifyLinkStatus) return;
+    var linked = 0;
+    for (var i = 0; i < songs.length; i++) {
+      if (songs[i].spotifyUri) linked++;
+    }
+    if (linked === songs.length) {
+      spotifyLinkStatus.textContent = '✓ All ' + linked + ' songs linked';
+      spotifyLinkStatus.style.color = 'var(--success)';
+    } else {
+      spotifyLinkStatus.textContent = linked + '/' + songs.length + ' linked';
+      spotifyLinkStatus.style.color = 'var(--warning)';
+    }
+  }
+
+  // Start game
+  startGameBtn.addEventListener('click', async function () {
+    // Check all songs have Spotify URIs
+    var missing = 0;
+    for (var i = 0; i < songs.length; i++) {
+      if (!songs[i].spotifyUri) missing++;
+    }
+
+    if (missing > 0) {
+      // Try auto-linking
+      startGameBtn.disabled = true;
+      startGameBtn.textContent = 'Linking songs...';
+      var ok = await linkAllSongs(spotifyLinkStatus);
+      startGameBtn.disabled = false;
+      startGameBtn.textContent = 'Start Game';
+      if (!ok) return;
+    }
+
     window.db.ref('games/' + roomCode + '/meta/status').set('playing');
   });
 
