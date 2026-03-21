@@ -377,9 +377,24 @@
       meta = newMeta;
       updateRoundDisplay();
 
-      // Track song index changes (music plays from venue speakers)
-      if (newMeta.currentSongIndex !== undefined && newMeta.currentSongIndex !== lastPlayedSongIndex) {
-        lastPlayedSongIndex = newMeta.currentSongIndex;
+      // New song notification
+      var newIdx = newMeta.currentSongIndex;
+      if (newIdx !== undefined && newIdx !== null && newIdx !== -1 && newIdx !== lastPlayedSongIndex && newMeta.status === 'playing') {
+        lastPlayedSongIndex = newIdx;
+        var songNum = (newIdx + 1);
+        showToast('🎵 Song ' + songNum + ' of 32 — listen up!', 'var(--accent-secondary)', 3000);
+        // Flash the board border
+        var boardEl = document.getElementById('bingo-board');
+        if (boardEl) {
+          boardEl.style.borderColor = 'var(--accent)';
+          boardEl.style.boxShadow = '0 0 20px rgba(255, 45, 117, 0.4)';
+          setTimeout(function () {
+            boardEl.style.borderColor = '';
+            boardEl.style.boxShadow = '';
+          }, 2000);
+        }
+      } else if (newIdx !== lastPlayedSongIndex) {
+        lastPlayedSongIndex = newIdx;
       }
 
       // Detect status change to "finished"
