@@ -324,7 +324,7 @@
 
     if (isMe) {
       celebrationTitle.textContent = '🎉 YOU WON! 🎉';
-      celebrationWinner.textContent = playerName;
+      celebrationWinner.textContent = '';
       celebrationSubtitle.textContent = isLastRound ? 'You won the final round!' : 'Congratulations!';
     } else {
       celebrationTitle.textContent = '🎵 BINGO! 🎵';
