@@ -185,7 +185,7 @@
     listeners.push({ ref: playersRef, event: 'value' });
 
     // Player activity + bingo claim listener
-    var processedClaims = {}; // track which claims we've already handled
+    var processingClaim = false;
 
     playersRef.on('child_changed', function (snap) {
       var playerId = snap.key;
@@ -195,11 +195,12 @@
       // Track player clicks
       onPlayerActivity(playerId);
 
-      // Check for bingo claims - only process fresh claims
-      var claimKey = playerId + '_' + (meta ? meta.currentRound : 0);
-      if (playerData.claimedBingo === true && meta && meta.status === 'playing' && !processedClaims[claimKey]) {
-        processedClaims[claimKey] = true;
-        handleBingoClaim(playerId, playerData);
+      // Check for bingo claims
+      if (playerData.claimedBingo === true && meta && meta.status === 'playing' && !processingClaim) {
+        processingClaim = true;
+        handleBingoClaim(playerId, playerData, function () {
+          processingClaim = false;
+        });
       }
     });
     listeners.push({ ref: playersRef, event: 'child_changed' });
@@ -776,12 +777,13 @@
   }
 
   // ===== BINGO Handler =====
-  function handleBingoClaim(playerId, playerData) {
+  function handleBingoClaim(playerId, playerData, done) {
     // Guard: ignore claims from players with invalid/missing data
     var board = playerData.board || [];
     var marks = playerData.marks || [];
     if (!Array.isArray(board) || board.length !== 16 || !Array.isArray(marks) || marks.length < 16) {
       window.db.ref('games/' + roomCode + '/players/' + playerId + '/claimedBingo').set(false);
+      if (done) done();
       return;
     }
 
@@ -790,27 +792,25 @@
       var freshCalled = snap.val();
       freshCalled = Array.isArray(freshCalled) ? freshCalled : [];
 
-      var currentRound = meta.currentRound || 1;
+      var currentRound = parseInt(meta.currentRound, 10) || 1;
 
       var isValid = window.checkBingo(board, marks, freshCalled, currentRound);
 
       if (isValid) {
-        var currentRound = meta.currentRound || 1;
         var updates = {
           'meta/winnerName': playerData.name,
           'meta/winnerId': playerId,
           'meta/status': 'finished'
         };
-        // Store winner for this round
         updates['meta/roundWinners/' + currentRound] = playerData.name;
         window.db.ref('games/' + roomCode).update(updates);
         showCelebration();
-        // Stop Spotify player
         if (adminEmbedEl) { adminEmbedEl.innerHTML = ''; adminEmbedEl.dataset.currentTrack = ''; }
         stopSongTimer();
       } else {
         window.db.ref('games/' + roomCode + '/players/' + playerId + '/claimedBingo').set(false);
       }
+      if (done) done();
     });
   }
 
