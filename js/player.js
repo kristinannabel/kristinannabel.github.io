@@ -530,19 +530,30 @@
     });
 
     // Listen for claimedBingo changes
+    var bingoListenerInit = true;
     playerRef.child('claimedBingo').on('value', function (snap) {
       var claimed = snap.val();
+
+      if (bingoListenerInit) {
+        // On first load: if stuck as true, reset it
+        bingoListenerInit = false;
+        if (claimed === true) {
+          playerRef.child('claimedBingo').set(false);
+          return;
+        }
+        updateBingoButton();
+        lastClaimedBingo = claimed;
+        return;
+      }
+
       if (claimed === true) {
-        // Currently claiming — show checking state
         bingoBtn.disabled = true;
         bingoBtn.textContent = 'Checking...';
         bingoBtn.classList.remove('bingo-ready');
       } else if (claimed === false) {
         if (lastClaimedBingo === true) {
-          // Was claiming, now rejected
           showToast('Not this time!', 'var(--danger)', 3000);
         }
-        // Reset button
         updateBingoButton();
       }
       lastClaimedBingo = claimed;
