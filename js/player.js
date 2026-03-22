@@ -274,8 +274,18 @@
     // Claim bingo in Firebase
     bingoBtn.disabled = true;
     bingoBtn.textContent = 'Checking...';
+    bingoBtn.classList.remove('bingo-ready');
     playerRef.child('claimedBingo').set(true);
     showToast('Checking...', 'var(--warning)', 10000);
+
+    // Safety timeout — reset if stuck after 10s
+    setTimeout(function () {
+      if (bingoBtn.textContent === 'Checking...') {
+        playerRef.child('claimedBingo').set(false);
+        updateBingoButton();
+        showToast('Timed out — try again!', 'var(--danger)', 3000);
+      }
+    }, 10000);
   });
 
   // ---- Game summary builder ----
@@ -519,14 +529,21 @@
       }
     });
 
-    // Listen for claimedBingo being reset (wrong claim)
+    // Listen for claimedBingo changes
     playerRef.child('claimedBingo').on('value', function (snap) {
       var claimed = snap.val();
-      if (lastClaimedBingo === true && claimed === false) {
-        // Bingo was rejected
-        showToast('Not this time!', 'var(--danger)', 3000);
-        bingoBtn.disabled = false;
-        bingoBtn.textContent = 'BINGO!';
+      if (claimed === true) {
+        // Currently claiming — show checking state
+        bingoBtn.disabled = true;
+        bingoBtn.textContent = 'Checking...';
+        bingoBtn.classList.remove('bingo-ready');
+      } else if (claimed === false) {
+        if (lastClaimedBingo === true) {
+          // Was claiming, now rejected
+          showToast('Not this time!', 'var(--danger)', 3000);
+        }
+        // Reset button
+        updateBingoButton();
       }
       lastClaimedBingo = claimed;
     });
